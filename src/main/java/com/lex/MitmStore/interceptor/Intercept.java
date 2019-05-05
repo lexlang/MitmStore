@@ -1,6 +1,7 @@
 package com.lex.MitmStore.interceptor;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -65,7 +66,6 @@ public class Intercept extends HttpProxyIntercept {
 	   HttpRequest httpRequest = pipeline.getHttpRequest();
 	   HandleRequest request=new HandleRequest(httpRequest);
 	   String detailUrl=request.getUrl();
-	   
 	   /**
 	    * 屏蔽链接
 	    */
@@ -75,19 +75,12 @@ public class Intercept extends HttpProxyIntercept {
 	   }
 	   
 	   if(responseStore.containsKey(detailUrl)){
+		   System.out.println("缓存:"+detailUrl);
 		   WebResponse webRespone = responseStore.get(detailUrl);
 		   flushStore(clientChannel,webRespone.getHttpHeader(),webRespone.getHttpBody());
 	   }else{
 		   pipeline.beforeRequest(clientChannel, httpContent);
 	   }
-			//消息体
-	   /*	HttpResponse httpResponse = makeHttpResponse(response);           
-            httpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, response.getBody().length);
-            //消息体
-            HttpContent httpCon = new DefaultLastHttpContent();
-            httpCon.content().writeBytes(response.getBody());
-            
-            */
    }
 	
 	@Override
@@ -159,12 +152,14 @@ public class Intercept extends HttpProxyIntercept {
 	   }
 	   
        if(modifyResponseOrNot(detailUrl)){
-    	   //return modifyResponse(response);
-    	   
+    	   httpResponse.content().writeBytes(modifyResponse(byteBufToString(httpResponse.content())).getBytes());
        }
 		
 	}
 	
+	public String modifyResponse(String content){
+		return content;
+	}
 	
 	private String byteBufToString(ByteBuf bf){
 		 byte[] byteArray = new byte[bf.capacity()];
