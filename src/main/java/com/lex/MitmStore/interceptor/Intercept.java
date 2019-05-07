@@ -45,7 +45,7 @@ public class Intercept extends HttpProxyIntercept {
 	/**
 	* default max content length size is 8MB
 	*/
-	private static final int DEFAULT_MAX_CONTENT_LENGTH = 1024 * 1024 * 8;
+	private static final int DEFAULT_MAX_CONTENT_LENGTH = 1024 * 1024 * 50;
 	
 	private int maxContentLength;
 	
@@ -96,8 +96,7 @@ public class Intercept extends HttpProxyIntercept {
 		} else if (matchHandle(pipeline.getHttpRequest(), pipeline.getHttpResponse(), pipeline)) {
 		  pipeline.resetAfterHead();
 		  proxyChannel.pipeline().addAfter("httpCodec", "decompress", new HttpContentDecompressor());
-		  proxyChannel.pipeline()
-		          .addAfter("decompress", "aggregator", new HttpObjectAggregator(maxContentLength));
+		  proxyChannel.pipeline().addAfter("decompress", "aggregator", new HttpObjectAggregator(maxContentLength));
 		  proxyChannel.pipeline().fireChannelRead(httpResponse);
 		  return;
 		}
@@ -148,6 +147,7 @@ public class Intercept extends HttpProxyIntercept {
 	       //消息体
 	       HttpContent httpBody = new DefaultLastHttpContent();
 	       httpBody.content().writeBytes(httpResponse.copy().content());
+	       
 	       responseStore.put(detailUrl,new WebResponse(detailUrl,httpHeader,httpBody));
 	   }
 	   
@@ -157,6 +157,11 @@ public class Intercept extends HttpProxyIntercept {
 		
 	}
 	
+	/**
+	 * 页面修改注入
+	 * @param content
+	 * @return
+	 */
 	public String modifyResponse(String content){
 		return content;
 	}
@@ -167,7 +172,6 @@ public class Intercept extends HttpProxyIntercept {
 		 String result = new String(byteArray);
 		 return result;
 	}
-	
 	
 	/**
 	 * 数据输出客户端
