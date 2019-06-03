@@ -6,9 +6,10 @@ import io.netty.handler.codec.http.HttpResponse;
 public class WebResponse {
 	private String url;
 	private HttpResponse httpHeader;
-	private HttpContent httpBody;
+	//消息体
+	private byte[] httpBody;
 	
-	public WebResponse(String url,HttpResponse httpHeader,HttpContent httpBody){
+	public WebResponse(String url,HttpResponse httpHeader,byte[] httpBody){
 		this.url=url;
 		this.httpHeader=httpHeader;
 		this.httpBody=httpBody;
@@ -22,7 +23,7 @@ public class WebResponse {
 		return httpHeader;
 	}
 
-	public HttpContent getHttpBody() {
+	public byte[] getHttpBody() {
 		return httpBody;
 	}
 	

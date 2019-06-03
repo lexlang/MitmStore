@@ -76,8 +76,12 @@ public class Intercept extends HttpProxyIntercept {
 	   
 	   if(responseStore.containsKey(detailUrl)){
 		   System.out.println("缓存:"+detailUrl);
-		   WebResponse webRespone = responseStore.get(detailUrl);
-		   flushStore(clientChannel,webRespone.getHttpHeader(),webRespone.getHttpBody().copy());
+		   WebResponse webResponse = responseStore.get(detailUrl);
+	       //消息体
+	       HttpContent httpBody = new DefaultLastHttpContent();
+	       httpBody.content().writeBytes(webResponse.getHttpBody());
+		   
+		   flushStore(clientChannel,webResponse.getHttpHeader(),httpBody);
 	   }else{
 		   pipeline.beforeRequest(clientChannel, httpContent);
 	   }
@@ -143,12 +147,9 @@ public class Intercept extends HttpProxyIntercept {
 	   if(storeResponseOrNot(detailUrl)){
 			//消息头
 		   HttpResponse httpHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.valueOf(httpResponse.getStatus().code()));
-		   httpHeader.headers().add(httpResponse.trailingHeaders());
-	       //消息体
-	       HttpContent httpBody = new DefaultLastHttpContent();
-	       httpBody.content().writeBytes(httpResponse.copy().content());
-	       
-	       responseStore.put(detailUrl,new WebResponse(detailUrl,httpHeader,httpBody));
+		   httpHeader.headers().add(pipeline.getHttpResponse().headers());
+		   
+	       responseStore.put(detailUrl,new WebResponse(detailUrl,httpHeader,byteBufToByte(httpResponse.copy().content())));
 	   }
 	   
        if(modifyResponseOrNot(detailUrl)){
@@ -172,6 +173,13 @@ public class Intercept extends HttpProxyIntercept {
 		 String result = new String(byteArray);
 		 return result;
 	}
+	
+	private byte[] byteBufToByte(ByteBuf bf){
+		 byte[] byteArray = new byte[bf.capacity()];
+		 bf.readBytes(byteArray); 
+		 return byteArray;
+	}
+	
 	
 	/**
 	 * 数据输出客户端
