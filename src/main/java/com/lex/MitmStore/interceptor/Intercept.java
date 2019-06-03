@@ -64,8 +64,9 @@ public class Intercept extends HttpProxyIntercept {
    @Override
    public void beforeRequest(Channel clientChannel, HttpContent httpContent,HttpProxyInterceptPipeline pipeline) throws Exception {
 	   HttpRequest httpRequest = pipeline.getHttpRequest();
-	   HandleRequest request=new HandleRequest(httpRequest);
+	   HandleRequest request=new HandleRequest(httpRequest,pipeline.getRequestProto().getSsl());
 	   String detailUrl=request.getUrl();
+	   
 	   /**
 	    * 屏蔽链接
 	    */
@@ -85,6 +86,9 @@ public class Intercept extends HttpProxyIntercept {
 	   }else{
 		   pipeline.beforeRequest(clientChannel, httpContent);
 	   }
+	   
+	   
+	   
    }
 	
 	@Override
@@ -141,7 +145,7 @@ public class Intercept extends HttpProxyIntercept {
 	* 拦截并处理响应
 	*/
 	public void handelResponse(HttpRequest httpRequest, FullHttpResponse httpResponse,HttpProxyInterceptPipeline pipeline) {
-	   HandleRequest request=new HandleRequest(httpRequest);
+	   HandleRequest request=new HandleRequest(httpRequest,pipeline.getRequestProto().getSsl());
 	   String detailUrl=request.getUrl();
 	   
 	   if(storeResponseOrNot(detailUrl)){

@@ -31,9 +31,9 @@ public 	class HandleRequest{
 	private String port;
 	
 	
-	public HandleRequest(HttpRequest request){
+	public HandleRequest(HttpRequest request,boolean isSSL){
 		method=request.getMethod().name();
-		url="https://"+request.headers().get(HttpHeaderNames.HOST)+request.getUri();
+		url=(isSSL?"https://":"http://")+request.headers().get(HttpHeaderNames.HOST)+request.getUri();
 		HttpHeaders rhds = request.headers();
 		hds = rhds.entries();
 	}
