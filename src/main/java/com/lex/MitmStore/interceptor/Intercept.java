@@ -77,7 +77,7 @@ public class Intercept extends HttpProxyIntercept {
 	   if(responseStore.containsKey(detailUrl)){
 		   System.out.println("缓存:"+detailUrl);
 		   WebResponse webRespone = responseStore.get(detailUrl);
-		   flushStore(clientChannel,webRespone.getHttpHeader(),webRespone.getHttpBody());
+		   flushStore(clientChannel,webRespone.getHttpHeader(),webRespone.getHttpBody().copy());
 	   }else{
 		   pipeline.beforeRequest(clientChannel, httpContent);
 	   }
