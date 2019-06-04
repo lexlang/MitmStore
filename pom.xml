@@ -15,10 +15,24 @@
   </properties>
 
   <dependencies>
+  
     <dependency>
     	<groupId>com.github.monkeywie</groupId>
     	<artifactId>proxyee</artifactId>
     	<version>1.0.4</version>
+	</dependency>
+	
+	<dependency>
+      <groupId>com.lexlang</groupId>
+      <artifactId>Requests</artifactId>
+      <version>0.1.1</version>
+    </dependency>
+    
+        <!-- https://mvnrepository.com/artifact/net.sourceforge.htmlunit/htmlunit 2.31-->
+	<dependency>
+	    <groupId>net.sourceforge.htmlunit</groupId>
+	    <artifactId>htmlunit</artifactId>
+	    <version>2.31</version>
 	</dependency>
 	
   </dependencies>
