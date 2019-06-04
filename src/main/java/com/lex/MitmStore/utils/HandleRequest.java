@@ -36,6 +36,9 @@ public 	class HandleRequest{
 		url=(isSSL?"https://":"http://")+request.headers().get(HttpHeaderNames.HOST)+request.getUri();
 		HttpHeaders rhds = request.headers();
 		hds = rhds.entries();
+		if(request.getMethod().toString().equals("POST")){
+			this.method="POST";
+		}
 	}
 	
 	public String getContent(HttpContent req){
