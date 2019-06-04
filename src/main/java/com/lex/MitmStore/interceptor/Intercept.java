@@ -37,7 +37,7 @@ public class Intercept extends HttpProxyIntercept {
 	/**
 	 *缓存相应 
 	 */
-	private final static LinkedHashMap<String, WebResponse> responseStore= new LinkedHashMap<String, WebResponse>() {
+	private  LinkedHashMap<String, WebResponse> responseStore= new LinkedHashMap<String, WebResponse>() {
 		private static final long serialVersionUID = 1L;
 		protected boolean removeEldestEntry(Map.Entry<String, WebResponse> eldest) {
             return size() > 300;
