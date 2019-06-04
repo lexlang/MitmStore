@@ -27,6 +27,10 @@ public class WebResponse {
 		return httpBody;
 	}
 	
+	public void setHttpBody(byte[] httpBody){
+		this.httpBody=httpBody;
+	}
+	
 	@Override
 	public String toString() {
 		return "WebResponse [url=" + url + ", httpHeader=" + httpHeader + ", httpBody=" + httpBody + "]";

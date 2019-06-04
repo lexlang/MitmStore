@@ -4,13 +4,16 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.github.monkeywie.proxyee.intercept.HttpProxyIntercept;
 import com.github.monkeywie.proxyee.intercept.HttpProxyInterceptPipeline;
 import com.github.monkeywie.proxyee.intercept.common.FullResponseIntercept;
 import com.lex.MitmStore.utils.HandleRequest;
+import com.lexlang.Requests.proxy.ProxyPara;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -84,10 +87,37 @@ public class Intercept extends HttpProxyIntercept {
 		   
 		   flushStore(clientChannel,webResponse.getHttpHeader(),httpBody);
 	   }else{
+		   List<Entry<String, String>> hds = request.getHeaders();
+		   for(int index=0;index<hds.size();index++){
+			   Entry<String, String> hd = hds.get(index);
+			   if(hd.getKey().equals("Proxy")){
+				   
+				   System.out.println("代理访问:"+detailUrl);
+				   if(request.getMethod().equals("POST")){
+					   request.setBody(httpContent);
+				   }
+				   //手工代理
+				   String[] proxy=hd.getValue().split(":");
+				   WebProxy webProxy = new WebProxy(request,new ProxyPara(proxy[0],Integer.parseInt(proxy[1])));
+				   WebResponse webResponse = webProxy.visit();
+				   
+				   if(modifyResponseOrNot(detailUrl)){
+					   webResponse.setHttpBody(modifyResponse(new String(webResponse.getHttpBody())).getBytes());
+				   }
+				   
+				   if(storeResponseOrNot(detailUrl)){
+				       responseStore.put(detailUrl,webResponse);
+				   }
+				   
+			       //消息体
+			       HttpContent httpBody = new DefaultLastHttpContent();
+			       httpBody.content().writeBytes(webResponse.getHttpBody());
+				   
+				   flushStore(clientChannel,webResponse.getHttpHeader(),httpBody);
+			   }
+		   }
 		   pipeline.beforeRequest(clientChannel, httpContent);
 	   }
-	   
-	   
 	   
    }
 	
@@ -148,18 +178,18 @@ public class Intercept extends HttpProxyIntercept {
 	   HandleRequest request=new HandleRequest(httpRequest,pipeline.getRequestProto().getSsl());
 	   String detailUrl=request.getUrl();
 	   
+       if(modifyResponseOrNot(detailUrl)){
+    	   httpResponse.content().writeBytes(modifyResponse(byteBufToString(httpResponse.content())).getBytes());
+       }
+	   
 	   if(storeResponseOrNot(detailUrl)){
 			//消息头
 		   HttpResponse httpHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.valueOf(httpResponse.getStatus().code()));
 		   httpHeader.headers().add(pipeline.getHttpResponse().headers());
 		   
-	       responseStore.put(detailUrl,new WebResponse(detailUrl,httpHeader,byteBufToByte(httpResponse.copy().content())));
+		   responseStore.put(detailUrl,new WebResponse(detailUrl,httpHeader,byteBufToByte(httpResponse.copy().content())));
 	   }
 	   
-       if(modifyResponseOrNot(detailUrl)){
-    	   httpResponse.content().writeBytes(modifyResponse(byteBufToString(httpResponse.content())).getBytes());
-       }
-		
 	}
 	
 	/**
