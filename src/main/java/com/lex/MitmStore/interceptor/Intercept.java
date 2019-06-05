@@ -102,7 +102,7 @@ public class Intercept extends HttpProxyIntercept {
 				   WebResponse webResponse = webProxy.visit();
 				   
 				   if(modifyResponseOrNot(detailUrl)){
-					   webResponse.setHttpBody(modifyResponse(new String(webResponse.getHttpBody())).getBytes());
+					   webResponse.setHttpBody(modifyResponse(webResponse.getHttpBody()));
 				   }
 				   
 				   if(storeResponseOrNot(detailUrl)){
@@ -179,7 +179,7 @@ public class Intercept extends HttpProxyIntercept {
 	   String detailUrl=request.getUrl();
 	   
        if(modifyResponseOrNot(detailUrl)){
-    	   httpResponse.content().writeBytes(modifyResponse(byteBufToString(httpResponse.content())).getBytes());
+    	   httpResponse.content().writeBytes(modifyResponse(byteBufTobyte(httpResponse.content())));
        }
 	   
 	   if(storeResponseOrNot(detailUrl)){
@@ -197,15 +197,14 @@ public class Intercept extends HttpProxyIntercept {
 	 * @param content
 	 * @return
 	 */
-	public String modifyResponse(String content){
-		return content;
+	public byte[] modifyResponse(byte[] origin){
+		return origin;
 	}
 	
-	private String byteBufToString(ByteBuf bf){
+	private byte[] byteBufTobyte(ByteBuf bf){
 		 byte[] byteArray = new byte[bf.capacity()];
 		 bf.readBytes(byteArray); 
-		 String result = new String(byteArray);
-		 return result;
+		 return byteArray;
 	}
 	
 	private byte[] byteBufToByte(ByteBuf bf){
