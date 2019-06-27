@@ -2,7 +2,9 @@ package com.lex.MitmStore.interceptor;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,13 +39,17 @@ public class Intercept extends HttpProxyIntercept {
 	/**
 	 *缓存相应 
 	 */
-	private  LinkedHashMap<String, WebResponse> responseStore= new LinkedHashMap<String, WebResponse>() {
-		private static final long serialVersionUID = 1L;
-		protected boolean removeEldestEntry(Map.Entry<String, WebResponse> eldest) {
-            return size() > 300;
-        }
-	};
+	private static Map<String, WebResponse> responseStore= Collections.synchronizedMap(new LinkedHashMap<String, WebResponse>() {
+																					private static final long serialVersionUID = 1L;
+																					protected boolean removeEldestEntry(Map.Entry<String, WebResponse> eldest) {
+																			            return size() > 300;
+																			        }
+																				});
 	
+	/**
+	 * 符合此正则保存
+	 */
+	private static Set<String> matchStoreUrls=new HashSet<String>();
 	
 	/**
 	* default max content length size is 8MB
@@ -60,6 +66,34 @@ public class Intercept extends HttpProxyIntercept {
 	    this.maxContentLength = maxContentLength;
 	}
 	
+	public Intercept setMatchStoreUrls(String matchUrl){
+		matchStoreUrls.add(matchUrl);
+		return this;
+	}
+	
+	private boolean haveUrlStore(String detailUrl){
+		if(responseStore.containsKey(detailUrl))
+			return true;
+		for(String matchUrl:matchStoreUrls){
+			if(detailUrl.matches(matchUrl)){
+				if(responseStore.containsKey(matchUrl)){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	private WebResponse getStore(String detailUrl){
+		for(String matchUrl:matchStoreUrls){
+			if(detailUrl.matches(matchUrl)){
+				if(responseStore.containsKey(matchUrl)){
+					return responseStore.get(matchUrl);
+				}
+			}
+		}
+		return responseStore.get(detailUrl);
+	}
 	
    /**
     * 请求前面拦截
@@ -78,9 +112,9 @@ public class Intercept extends HttpProxyIntercept {
 		   return ;
 	   }
 	   
-	   if(responseStore.containsKey(detailUrl)){
+	   if(haveUrlStore(detailUrl)){
 		   System.out.println("缓存:"+detailUrl);
-		   WebResponse webResponse = responseStore.get(detailUrl);
+		   WebResponse webResponse = getStore(detailUrl);
 	       //消息体
 	       HttpContent httpBody = new DefaultLastHttpContent();
 	       httpBody.content().writeBytes(webResponse.getHttpBody());
@@ -107,6 +141,12 @@ public class Intercept extends HttpProxyIntercept {
 				   
 				   if(storeResponseOrNot(detailUrl)){
 				       responseStore.put(detailUrl,webResponse);
+				   }
+				   
+				   for(String matchUrl:matchStoreUrls){
+						if(detailUrl.matches(matchUrl)){
+							responseStore.put(matchUrl,webResponse);
+						}
 				   }
 				   
 			       //消息体
@@ -186,8 +226,16 @@ public class Intercept extends HttpProxyIntercept {
 			//消息头
 		   HttpResponse httpHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.valueOf(httpResponse.getStatus().code()));
 		   httpHeader.headers().add(pipeline.getHttpResponse().headers());
-		   
 		   responseStore.put(detailUrl,new WebResponse(detailUrl,httpHeader,byteBufToByte(httpResponse.copy().content())));
+	   }
+	   
+	   for(String matchUrl:matchStoreUrls){
+			if(detailUrl.matches(matchUrl)){
+				//消息头
+				HttpResponse httpHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.valueOf(httpResponse.getStatus().code()));
+				httpHeader.headers().add(pipeline.getHttpResponse().headers());
+			    responseStore.put(matchUrl,new WebResponse(detailUrl,httpHeader,byteBufToByte(httpResponse.copy().content())));
+			}
 	   }
 	   
 	}
