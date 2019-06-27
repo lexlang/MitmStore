@@ -39,7 +39,8 @@ new HttpProxyServer()
 		        	*/
 		        	return origin;
 				}
-			});
+			}.setMatchStoreUrls(".+baidu.+")//正则缓存
+			);
 	}
 	})
 .start(7777);
