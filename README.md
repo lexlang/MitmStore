@@ -13,7 +13,7 @@ new HttpProxyServer()
 			pipeline.addLast(new Intercept() {
 				@Override
 				public boolean storeResponseOrNot(String url){
-					return url.endsWith(".js") || url.endsWith(".css") || url.equals(".ico") || url.endsWith(".png");
+					return url.endsWith(".js") || url.endsWith(".css") || url.endsWith(".ico") || url.endsWith(".png");
 				}
 				@Override
 				public boolean rejectResponseOrNot(String url){
@@ -38,6 +38,18 @@ new HttpProxyServer()
 	        		}catch(Exception ex){}
 		        	*/
 		        	return origin;
+				}
+				@Override
+				public boolean modifyBeforeResponseOrNot(HandleRequest request){
+					//不访问原网站,直接修改数据
+					return request.getUrl().contains("bejson.com");
+				}
+				@Override
+				public void modifyBeforeResponse(HandleRequest request,Channel clientChannel){
+				   HttpResponse httpHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.valueOf(200));
+			       HttpContent httpBody = new DefaultLastHttpContent();
+	       		   httpBody.content().writeBytes("hello world".getBytes());
+		   		   flushStore(clientChannel,webResponse.getHttpHeader(),httpBody);
 				}
 			}.setMatchStoreUrls(".+baidu.+")//正则缓存
 			);
