@@ -85,6 +85,8 @@ public class Intercept extends HttpProxyIntercept {
 	}
 	
 	private WebResponse getStore(String detailUrl){
+		if(responseStore.containsKey(detailUrl))
+			return responseStore.get(detailUrl);
 		for(String matchUrl:matchStoreUrls){
 			if(detailUrl.matches(matchUrl)){
 				if(responseStore.containsKey(matchUrl)){
@@ -109,6 +111,14 @@ public class Intercept extends HttpProxyIntercept {
 	    */
 	   if(rejectResponseOrNot(detailUrl)){
 		   clientChannel.close();
+		   return ;
+	   }
+	   
+	   /**
+	    * 手工修改链接
+	    */
+	   if(modifyBeforeResponseOrNot(request)){
+		   modifyBeforeResponse(request,clientChannel);
 		   return ;
 	   }
 	   
@@ -154,6 +164,7 @@ public class Intercept extends HttpProxyIntercept {
 			       httpBody.content().writeBytes(webResponse.getHttpBody());
 				   
 				   flushStore(clientChannel,webResponse.getHttpHeader(),httpBody);
+				   return ;
 			   }
 		   }
 		   pipeline.beforeRequest(clientChannel, httpContent);
@@ -219,7 +230,7 @@ public class Intercept extends HttpProxyIntercept {
 	   String detailUrl=request.getUrl();
 	   
        if(modifyResponseOrNot(detailUrl)){
-    	   httpResponse.content().writeBytes(modifyResponse(detailUrl,byteBufTobyte(httpResponse.content())));
+    	   httpResponse.content().writeBytes(modifyResponse(detailUrl,byteBufToByte(httpResponse.content())));
        }
 	   
 	   if(storeResponseOrNot(detailUrl)){
@@ -248,19 +259,12 @@ public class Intercept extends HttpProxyIntercept {
 	public byte[] modifyResponse(String detailUrl,byte[] origin){
 		return origin;
 	}
-	
-	private byte[] byteBufTobyte(ByteBuf bf){
-		 byte[] byteArray = new byte[bf.capacity()];
-		 bf.readBytes(byteArray); 
-		 return byteArray;
-	}
-	
+
 	private byte[] byteBufToByte(ByteBuf bf){
 		 byte[] byteArray = new byte[bf.capacity()];
 		 bf.readBytes(byteArray); 
 		 return byteArray;
 	}
-	
 	
 	/**
 	 * 数据输出客户端
@@ -271,6 +275,22 @@ public class Intercept extends HttpProxyIntercept {
 	    clientChannel.close();
 	}
 	
+	/**
+	 * 在访问前拦截,手工修改数据
+	 * @param url
+	 * @return
+	 */
+	public boolean modifyBeforeResponseOrNot(HandleRequest request){
+		return false;
+	}
+	
+	/**
+	 * 在访问前拦截,手工修改数据
+	 * @param request
+	 */
+	public void modifyBeforeResponse(HandleRequest request,Channel clientChannel){
+		
+	}
 	
 	/**
      * 屏蔽指定链接
