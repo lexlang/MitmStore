@@ -146,7 +146,7 @@ public class Intercept extends HttpProxyIntercept {
 				   WebResponse webResponse = webProxy.visit();
 				   
 				   if(modifyResponseOrNot(detailUrl)){
-					   webResponse.setHttpBody(modifyResponse(request,webResponse.getHttpBody()));
+					   webResponse.setHttpBody(modifyResponse(request,webResponse.getHttpHeader(),webResponse.getHttpBody()));
 				   }
 				   
 				   if(storeResponseOrNot(detailUrl)){
@@ -230,7 +230,10 @@ public class Intercept extends HttpProxyIntercept {
 	   String detailUrl=request.getUrl();
 	   
        if(modifyResponseOrNot(detailUrl)){
-    	   httpResponse.content().writeBytes(modifyResponse(request,byteBufToByte(httpResponse.content())));
+			//消息头
+		   HttpResponse httpHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.valueOf(httpResponse.getStatus().code()));
+		   httpHeader.headers().add(pipeline.getHttpResponse().headers());
+    	   httpResponse.content().writeBytes(modifyResponse(request,httpHeader,byteBufToByte(httpResponse.content())));
        }
 	   
 	   if(storeResponseOrNot(detailUrl)){
@@ -256,7 +259,7 @@ public class Intercept extends HttpProxyIntercept {
 	 * @param content
 	 * @return
 	 */
-	public byte[] modifyResponse(HandleRequest request,byte[] origin){
+	public byte[] modifyResponse(HandleRequest request,HttpResponse httpHeader,byte[] origin){
 		return origin;
 	}
 
