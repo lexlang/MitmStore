@@ -8,6 +8,8 @@ import java.io.UnsupportedEncodingException;
 
 import javax.imageio.ImageIO;
 
+import org.apache.http.HttpVersion;
+
 import com.github.monkeywie.proxyee.intercept.HttpProxyInterceptInitializer;
 import com.github.monkeywie.proxyee.intercept.HttpProxyInterceptPipeline;
 import com.github.monkeywie.proxyee.intercept.common.CertDownIntercept;
@@ -17,10 +19,13 @@ import com.github.monkeywie.proxyee.proxy.ProxyType;
 import com.github.monkeywie.proxyee.server.HttpProxyServer;
 import com.github.monkeywie.proxyee.server.HttpProxyServerConfig;
 import com.lex.MitmStore.interceptor.Intercept;
+import com.lex.MitmStore.utils.HandleRequest;
 
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
+import io.netty.channel.Channel;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.DefaultLastHttpContent;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
  * Hello world!
@@ -53,9 +58,7 @@ public class App
 		            	return  false;//url.equals("http://www.bejson.com/");
 		            }
 		        	@Override
-		        	public byte[] modifyResponse(byte[] origin){
-		        		
-
+		        	public byte[] modifyResponse(HandleRequest request,byte[] origin){
   						//修改原始文件
 						try {
 							String content = new String(origin,"utf-8");
@@ -73,6 +76,15 @@ public class App
 		        		return origin;
 		        		
 		        	}
+					@Override
+					public boolean modifyBeforeResponseOrNot(HandleRequest request){
+						//不访问原网站,直接修改数据
+						return request.getUrl().contains("bejson.com");
+					}
+					@Override
+					public void modifyBeforeResponse(HandleRequest request,Channel clientChannel){
+
+					}
 		            
 		        });
 		      }
