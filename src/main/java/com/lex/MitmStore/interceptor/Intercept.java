@@ -14,6 +14,8 @@ import java.util.Set;
 import com.github.monkeywie.proxyee.intercept.HttpProxyIntercept;
 import com.github.monkeywie.proxyee.intercept.HttpProxyInterceptPipeline;
 import com.github.monkeywie.proxyee.intercept.common.FullResponseIntercept;
+import com.github.monkeywie.proxyee.handler.HttpProxyClientHandle;
+import com.github.monkeywie.proxyee.handler.HttpProxyServerHandle;
 import com.lex.MitmStore.utils.HandleRequest;
 import com.lexlang.Requests.proxy.ProxyPara;
 
@@ -131,47 +133,60 @@ public class Intercept extends HttpProxyIntercept {
 		   
 		   flushStore(clientChannel,webResponse.getHttpHeader(),httpBody);
 	   }else{
+		   boolean flag=true;
 		   List<Entry<String, String>> hds = request.getHeaders();
+		   ProxyPara proxyPara=null;
 		   for(int index=0;index<hds.size();index++){
 			   Entry<String, String> hd = hds.get(index);
 			   if(hd.getKey().equals("Proxy")){
-				   
-				   System.out.println("代理访问:"+detailUrl);
-				   if(request.getMethod().equals("POST")){
-					   request.setBody(httpContent);
-				   }
+				   flag=false;
 				   //手工代理
 				   String[] proxy=hd.getValue().split(":");
-				   WebProxy webProxy = new WebProxy(request,new ProxyPara(proxy[0],Integer.parseInt(proxy[1])));
-				   WebResponse webResponse = webProxy.visit();
-				   
-				   if(modifyResponseOrNot(detailUrl)){
-					   webResponse.setHttpBody(modifyResponse(request,webResponse.getHttpHeader(),webResponse.getHttpBody()));
-				   }
-				   
-				   if(storeResponseOrNot(detailUrl)){
-				       responseStore.put(detailUrl,webResponse);
-				   }
-				   
-				   for(String matchUrl:matchStoreUrls){
-						if(detailUrl.matches(matchUrl)){
-							responseStore.put(matchUrl,webResponse);
-						}
-				   }
-				   
-			       //消息体
-			       HttpContent httpBody = new DefaultLastHttpContent();
-			       httpBody.content().writeBytes(webResponse.getHttpBody());
-				   
-				   flushStore(clientChannel,webResponse.getHttpHeader(),httpBody);
-				   return ;
+				   proxyPara=new ProxyPara(proxy[0],Integer.parseInt(proxy[1]));
 			   }
 		   }
-		   pipeline.beforeRequest(clientChannel, httpContent);
+		   if(flag){//如果代理就提前结束
+			   pipeline.beforeRequest(clientChannel, httpContent);
+		   }else{
+			   System.out.println("代理访问:"+detailUrl);
+			   if(request.getMethod().equals("POST")){
+				   request.setBody(httpContent);
+			   }
+			   WebProxy webProxy = new WebProxy(request,proxyPara);
+			   WebResponse webResponse = webProxy.visit();
+			   
+			   if(modifyResponseOrNot(detailUrl)){
+				   webResponse.setHttpBody(modifyResponse(request,webResponse.getHttpHeader(),webResponse.getHttpBody()));
+			   }
+			   
+			   if(storeResponseOrNot(detailUrl)){
+			       responseStore.put(detailUrl,webResponse);
+			   }
+			   
+			   for(String matchUrl:matchStoreUrls){
+					if(detailUrl.matches(matchUrl)){
+						responseStore.put(matchUrl,webResponse);
+					}
+			   }
+			   
+		       //消息体
+		       HttpContent httpBody = new DefaultLastHttpContent();
+		       httpBody.content().writeBytes(webResponse.getHttpBody());
+			   flushStore(clientChannel,webResponse.getHttpHeader(),httpBody);
+		   }
 	   }
 	   
    }
 	
+    private void interval(){
+    	try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+   
 	@Override
 	public final void afterResponse(Channel clientChannel, Channel proxyChannel,HttpResponse httpResponse,HttpProxyInterceptPipeline pipeline) throws Exception {
 	    if (httpResponse instanceof FullHttpResponse) {
@@ -222,6 +237,19 @@ public class Intercept extends HttpProxyIntercept {
 		  return true;
 	}
 	
+	
+	private boolean proxyNotModify(HandleRequest request){
+		   List<Entry<String, String>> hds = request.getHeaders();
+		   ProxyPara proxyPara=null;
+		   for(int index=0;index<hds.size();index++){
+			   Entry<String, String> hd = hds.get(index);
+			   if(hd.getKey().equals("Proxy")){
+				   return false;
+			   }
+		   }
+		   return true;
+	}
+	
 	/**
 	* 拦截并处理响应
 	*/
@@ -229,7 +257,11 @@ public class Intercept extends HttpProxyIntercept {
 	   HandleRequest request=new HandleRequest(httpRequest,pipeline.getRequestProto().getSsl());
 	   String detailUrl=request.getUrl();
 	   
-       if(modifyResponseOrNot(detailUrl)){
+	   if(! proxyNotModify(request)){
+		   return ;
+	   }
+	   
+       if(modifyResponseOrNot(detailUrl)){ //代理ip 跟 本地访问两次,这是什么bug
 			//消息头
 		   HttpResponse httpHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.valueOf(httpResponse.getStatus().code()));
 		   httpHeader.headers().add(pipeline.getHttpResponse().headers());
